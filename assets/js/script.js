@@ -2,7 +2,6 @@
 // Global Variables
 var units = "units=imperial";
 var APIKey = "appid=26ba3a7e283acb9cd1e8665c6c3b319a";
-// var APIKey = "appid=ce9cf9f240e5f73b22d7ec2394c97ed6";
 var dailyWeather = "https://api.openweathermap.org/data/2.5/weather?q=";
 var forecastWeather ="https://api.openweathermap.org/data/2.5/forecast?";
 var weatherIcon = "http://openweathermap.org/img/wn/";
@@ -12,7 +11,7 @@ var citySearchForm = $("#citySearchForm");
 var searchedCities = $("#searchedCityLi");
 var searchCity = "";
 
-
+// get todays weather
 var getWeather = function () {
     event.preventDefault();
     var dailyWeatherApiUrl = dailyWeather + searchCity + "&" + APIKey + "&" + units;
@@ -37,9 +36,9 @@ var getWeather = function () {
 });
 };
 
+// get 5 day forecast
 var getForecast = function (latitude, longitude) {
   var weeklyWeatherApiUrl = forecastWeather + 'lat=' + latitude + "&lon=" + longitude + "&" + APIKey + "&" + units;
-    //trying to get api to work
     fetch(weeklyWeatherApiUrl)
       .then(function (response) {
         return response.json();
@@ -59,8 +58,70 @@ var getForecast = function (latitude, longitude) {
         $("#weatherIcon" + [i]).attr("src", weatherIcon1);
 }});
   };
+// storing search history and creating button to re-search
+var searchHistoryList = document.querySelector("#searchedCityLi");
 
-$(citySearchForm).on("submit", function () {
+var searchHistory = [];
+
+function renderHistory() {
+
+  searchHistoryList.innerHTML = "";
+
+  for (var i = 0; i < searchHistory.length; i++) {
+    var history = searchHistory[i];
+
+    var li = document.createElement("li");
+    li.setAttribute("data-index", i);
+
+    var button = document.createElement("button");
+    button.textContent = history;
+
+    li.appendChild(button);
+    searchHistoryList.appendChild(li);
+  }
+}
+
+function init() {
+  var storedHistory = JSON.parse(localStorage.getItem("searchHistory"));
+  if (storedHistory !== null) {
+    searchHistory = storedHistory;
+  }
+  renderHistory();
+}
+
+function storeHistory() {
+  localStorage.setItem("searchHistory", JSON.stringify(searchHistory));
+}
+
+searchHistoryList.addEventListener("click", function(event) {
+  var element = event.target;
+  if (element.matches("button") === true) {
+    var index = element.parentElement.getAttribute("data-index");
+    searchCity = searchHistory[index];
+    getWeather();
+    storeHistory();
+    renderHistory();
+  }
+});
+
+init();
+
+// search button
+$(citySearchForm).on("submit", function (event) {
+  event.preventDefault();
    searchCity = $("#searchCity").val().trim();
     getWeather();
+    if (searchHistory.length > 9) {
+      searchHistory.pop();
+    }
+
+    if (searchCity === "" || searchHistory.includes(searchCity)) {
+    return;
+  } else {
+
+  searchHistory.unshift(searchCity);
+  searchCity = "";
+    storeHistory();
+    renderHistory();
+  }
   });
